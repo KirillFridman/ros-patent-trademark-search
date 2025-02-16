@@ -5,7 +5,7 @@ import time
 def search_trademarks(query, max_pages=5):
     with sync_playwright() as p:
         # Launch browser
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=False)
         page = browser.new_page()
 
         # Open Rospatent trademark search website
@@ -30,17 +30,18 @@ def search_trademarks(query, max_pages=5):
 
         # Convert to integer (if needed)
         total_records = int(total_records.strip())
+        total_pages = (total_records + 9) // 10
 
-        print(f"Total records: {total_records}")
-
-        # Wait for search results to load
-        page.wait_for_selector(".table_wCH66")
+        print(f"Total records / pages: {total_records} / {total_pages}")
 
         results = []
         current_page = 1
 
         while current_page <= max_pages:
             print(f"Scraping page {current_page}...")
+
+            # Wait for search results to load
+            page.wait_for_selector(".table_wCH66")
 
             # Extract table rows
             rows = page.locator(".table_wCH66 tbody tr").all()
@@ -55,7 +56,7 @@ def search_trademarks(query, max_pages=5):
                     )  # Adjust if there's a specific class
                     if svg_element.is_visible():
                         svg_element.hover()
-                        time.sleep(1)  # Ensure tooltip appears
+                        time.sleep(0.1)  # Ensure tooltip appears
 
                     # Step 2: Click "Открыть карточку"
                     open_card_button = row.locator(
@@ -66,7 +67,7 @@ def search_trademarks(query, max_pages=5):
 
                     if open_card_button.is_visible():
                         open_card_button.click()
-                        time.sleep(2)  # Allow popup to load
+                        time.sleep(1)  # Allow popup to load
 
                         # Step 3: Extract "Классы МКТУ и перечень товаров и/или услуг"
                         mktu_element = page.locator(
@@ -86,7 +87,7 @@ def search_trademarks(query, max_pages=5):
                         close_button = page.locator(".close_e0SDh")
                         if close_button.is_visible():
                             close_button.click()
-                            time.sleep(1)  # Ensure popup closes
+                            time.sleep(0.1)  # Ensure popup closes
 
                     else:
                         mktu_text = "Not found"
@@ -108,9 +109,8 @@ def search_trademarks(query, max_pages=5):
                 break
 
             # Try to go to the next page
-            next_page_button = page.locator(".pagination_SIODz >> text='>'").nth(0)
-
-            if False:  # next_page_button.is_enabled():
+            next_page_button = page.locator(".pagination_SIODz .arrow_\\+6yf3").filter(has_text=">").first
+            if True:  # next_page_button.is_enabled():
                 next_page_button.click()
                 time.sleep(2)  # Allow time for page load
                 current_page += 1
@@ -126,4 +126,4 @@ def search_trademarks(query, max_pages=5):
 
 
 # Example usage: scrape up to 5 pages of search results for "Apple"
-search_trademarks("Apple", max_pages=1)
+search_trademarks("Apple", max_pages=2)
