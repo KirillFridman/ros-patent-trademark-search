@@ -1,0 +1,1 @@
+https://searchplatform.rospatent.gov.ru/trademarks
